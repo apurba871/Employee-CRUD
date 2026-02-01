@@ -39,4 +39,17 @@ public class EmployeeRestController {
         Employee newEmployee = employeeService.save(employeeDetails);
         return newEmployee;
     }
+
+    //expose "/employees" to update an existing employee
+    @PutMapping("/employees")
+    public Employee updateEmployee(@RequestBody Employee employeeDetails) {
+        //find if there exists an employee with the given id
+        Employee dbEmployee = employeeService.findById(employeeDetails.getId());
+        if (dbEmployee == null)
+            throw new RuntimeException("Employee id not found in DB " + employeeDetails.getId());
+
+        //update the details of the employee
+        dbEmployee = employeeService.save(employeeDetails);
+        return dbEmployee;
+    }
 }
