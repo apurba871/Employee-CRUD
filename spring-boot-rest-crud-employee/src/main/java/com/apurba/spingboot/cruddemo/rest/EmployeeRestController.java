@@ -5,17 +5,21 @@ import com.apurba.spingboot.cruddemo.entity.Employee;
 import com.apurba.spingboot.cruddemo.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 public class EmployeeRestController {
 
     private EmployeeService employeeService;
+    private JsonMapper jsonMapper;
     @Autowired
-    public EmployeeRestController(EmployeeService theEmployeeService) {
+    public EmployeeRestController(EmployeeService theEmployeeService, JsonMapper jsonMapper) {
         employeeService = theEmployeeService;
+        this.jsonMapper = jsonMapper;
     }
 
     //expose "/employees" and return a list of employees
@@ -51,5 +55,26 @@ public class EmployeeRestController {
         //update the details of the employee
         dbEmployee = employeeService.save(employeeDetails);
         return dbEmployee;
+    }
+
+    //expose "/employees/{employeeId}" to allow partial update to existing employee
+    @PatchMapping("/employees/{employeeId}")
+    public Employee partialUpdateEmployee(@PathVariable int employeeId, @RequestBody Map<String, Object> patchPayload) {
+        //find the employee from DB
+        Employee dbEmployee = employeeService.findById(employeeId);
+
+        if (dbEmployee == null)
+            throw new RuntimeException("Employee id not found in DB " + employeeId);
+
+        //throw exception if patch request payload contains id
+        if (patchPayload.containsKey("id")) {
+            throw new RuntimeException("'id' not allowed in payload!");
+        }
+
+        //apply the partial updates to the employee
+        Employee patchedEmployee = jsonMapper.updateValue(dbEmployee, patchPayload);
+
+        Employee updatedEmployee = employeeService.save(patchedEmployee);
+        return updatedEmployee;
     }
 }
